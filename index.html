@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hockey Bricks</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="game-wrap">
+    <div class="topbar">
+      <div>
+        <p class="label">Ice Arena</p>
+        <h1>Hockey Bricks</h1>
+      </div>
+      <button id="actionBtn" type="button">Start Game</button>
+    </div>
+
+    <div class="info-panel">
+      <div class="stat-box">
+        <span class="stat-title">Score</span>
+        <strong id="score">0</strong>
+      </div>
+      <div class="stat-box">
+        <span class="stat-title">Lives</span>
+        <strong id="lives">3</strong>
+      </div>
+      <div class="stat-box">
+        <span class="stat-title">Time</span>
+        <strong id="cas">00:00</strong>
+      </div>
+      <div class="stat-box">
+        <span class="stat-title">Level</span>
+        <strong id="level">1</strong>
+      </div>
+    </div>
+
+    <div class="canvas-frame">
+      <canvas id="canvas" width="800" height="550"></canvas>
+    </div>
+
+    <div style="display:none;">
+      <span id="tocke">0</span>
+    </div>
+  </div>
+
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="script.js"></script>
+</body>
+</html>
