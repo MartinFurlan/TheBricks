@@ -1,41 +1,58 @@
-var canvas = document.getElementById("canvas");
-var ctx = canvas.getContext("2d");
-var actionBtn = document.getElementById("actionBtn");
-var scoreEl = document.getElementById("score");
-var hiddenScoreEl = document.getElementById("tocke");
-var timeEl = document.getElementById("cas");
-var levelEl = document.getElementById("level");
+var $canvas = $("#canvas"),
+    canvas = $canvas[0],
+    ctx = canvas.getContext("2d"),
+    $btn = $("#actionBtn"),
+    $score = $("#score"),
+    $hiddenScore = $("#tocke"),
+    $time = $("#cas"),
+    $level = $("#level");
 
-var x = 150, y = 200, dx = 2.8, dy = -2.8;
-var WIDTH = canvas.width, HEIGHT = canvas.height, r = 12;
+var x = 150,
+    y = 200,
+    dx = 2.8,
+    dy = -2.8,
+    r = 12,
+    WIDTH = canvas.width,
+    HEIGHT = canvas.height,
+    paddlex = 0,
+    paddleh = 28,
+    paddlew = 140,
+    rightDown = false,
+    leftDown = false,
+    bricks = [],
+    NROWS = 3,
+    NCOLS = 4,
+    BRICKWIDTH = 0,
+    BRICKHEIGHT = 24,
+    PADDING = 10,
+    BRICKOFFSETLEFT = 18,
+    BRICKOFFSETTOP = 42,
+    intervalId = null,
+    timerId = null,
+    level = 1,
+    score = 0,
+    seconds = 0,
+    started = false,
+    paused = false,
+    won = false;
 
-var intervalId = null, timerId = null;
-var level = 1, score = 0, seconds = 0;
-var paddlex = 0, paddleh = 28, paddlew = 140;
-var rightDown = false, leftDown = false;
-var bricks = [], NROWS = 3, NCOLS = 4, BRICKWIDTH = 0, BRICKHEIGHT = 24, PADDING = 10;
-var BRICKOFFSETLEFT = 18, BRICKOFFSETTOP = 42;
-var gameWon = false, isPaused = false, gameStarted = false, assetsReady = 0;
+var paddleImg = new Image(),
+    puckImg = new Image(),
+    loaded = 0;
 
-var paddleImg = new Image();
-var puckImg = new Image();
 paddleImg.src = "paddle.png";
 puckImg.src = "puck.png";
+paddleImg.onload = puckImg.onload = function () {
+    loaded++;
+    if (loaded === 2) resetBoard();
+};
 
-paddleImg.onload = assetLoaded;
-puckImg.onload = assetLoaded;
-
-function assetLoaded() {
-    assetsReady++;
-    if (assetsReady >= 2) resetBoard();
-}
-
-function showGameAlert(title, text, icon, confirmButtonText) {
+function alertBox(title, text, buttonText) {
     return Swal.fire({
         title: title,
         text: text,
-        icon: icon,
-        confirmButtonText: confirmButtonText,
+        icon: "success",
+        confirmButtonText: buttonText,
         background: "#091729",
         color: "#eef8ff",
         confirmButtonColor: "#ffffff",
@@ -50,39 +67,33 @@ function showGameAlert(title, text, icon, confirmButtonText) {
     });
 }
 
-function formatTime(sec) {
-    var m = Math.floor(sec / 60);
-    var s = sec % 60;
-    if (m < 10) m = "0" + m;
-    if (s < 10) s = "0" + s;
+function fmt(sec) {
+    var m = String(Math.floor(sec / 60)).padStart(2, "0"),
+        s = String(sec % 60).padStart(2, "0");
     return m + ":" + s;
 }
 
-function updateUI() {
-    scoreEl.textContent = score;
-    hiddenScoreEl.textContent = score;
-    timeEl.textContent = formatTime(seconds);
-    levelEl.textContent = level;
-
-    if (!gameStarted) actionBtn.textContent = "Start Game";
-    else if (isPaused) actionBtn.textContent = "Resume";
-    else actionBtn.textContent = "Pause";
+function ui() {
+    $score.html(score);
+    $hiddenScore.html(score);
+    $time.html(fmt(seconds));
+    $level.html(level);
+    $btn.html(!started ? "Start Game" : paused ? "Resume" : "Pause");
 }
 
 function stopLoops() {
     clearInterval(intervalId);
     clearInterval(timerId);
-    intervalId = null;
-    timerId = null;
+    intervalId = timerId = null;
 }
 
 function startLoops() {
     stopLoops();
     intervalId = setInterval(draw, 10);
     timerId = setInterval(function () {
-        if (!isPaused) {
+        if (!paused) {
             seconds++;
-            timeEl.textContent = formatTime(seconds);
+            $time.html(fmt(seconds));
         }
     }, 1000);
 }
@@ -101,28 +112,23 @@ function initPaddle() {
 
 function initBricks() {
     if (level == 1) {
-        NROWS = 3;
-        NCOLS = 4;
+        NROWS = 3; NCOLS = 4;
     } else if (level == 2) {
-        NROWS = 4;
-        NCOLS = 6;
+        NROWS = 4; NCOLS = 6;
     } else {
-        NROWS = 5;
-        NCOLS = 8;
+        NROWS = 5; NCOLS = 8;
     }
 
-    BRICKWIDTH = Math.floor((WIDTH - (BRICKOFFSETLEFT * 2) - ((NCOLS - 1) * PADDING)) / NCOLS);
+    BRICKWIDTH = Math.floor((WIDTH - BRICKOFFSETLEFT * 2 - (NCOLS - 1) * PADDING) / NCOLS);
     bricks = [];
 
     for (var i = 0; i < NROWS; i++) {
         bricks[i] = [];
-        for (var j = 0; j < NCOLS; j++) {
-            bricks[i][j] = 1;
-        }
+        for (var j = 0; j < NCOLS; j++) bricks[i][j] = 1;
     }
 }
 
-function allBricksDestroyed() {
+function allBricksGone() {
     for (var i = 0; i < NROWS; i++) {
         for (var j = 0; j < NCOLS; j++) {
             if (bricks[i][j] > 0) return false;
@@ -131,30 +137,28 @@ function allBricksDestroyed() {
     return true;
 }
 
-function nextLevelCheck() {
-    if (!allBricksDestroyed() || gameWon) return;
+function nextLevel() {
+    if (!allBricksGone() || won) return;
 
-    gameWon = true;
+    won = true;
     stopLoops();
 
     if (level < 3) {
-        showGameAlert("Nice!", "You completed level " + level + ".", "success", "Continue")
-            .then(function () {
-                level++;
-                gameWon = false;
-                isPaused = false;
-                resetBall();
-                initPaddle();
-                initBricks();
-                updateUI();
-                draw();
-                startLoops();
-            });
+        alertBox("Nice!", "You completed level " + level + ".", "Continue").then(function () {
+            level++;
+            won = false;
+            paused = false;
+            resetBall();
+            initPaddle();
+            initBricks();
+            ui();
+            draw();
+            startLoops();
+        });
     } else {
-        showGameAlert("Champion!", "You completed all levels.", "success", "Play Again")
-            .then(function () {
-                resetBoard();
-            });
+        alertBox("Champion!", "You completed all levels.", "Play Again").then(function () {
+            resetBoard();
+        });
     }
 }
 
@@ -216,12 +220,12 @@ function drawPuck() {
 function drawBricks() {
     for (var i = 0; i < NROWS; i++) {
         for (var j = 0; j < NCOLS; j++) {
-            if (bricks[i][j] <= 0) continue;
+            if (!bricks[i][j]) continue;
 
-            var bx = (j * (BRICKWIDTH + PADDING)) + BRICKOFFSETLEFT;
-            var by = (i * (BRICKHEIGHT + PADDING)) + BRICKOFFSETTOP;
+            var bx = j * (BRICKWIDTH + PADDING) + BRICKOFFSETLEFT,
+                by = i * (BRICKHEIGHT + PADDING) + BRICKOFFSETTOP,
+                g = ctx.createLinearGradient(bx, by, bx, by + BRICKHEIGHT);
 
-            var g = ctx.createLinearGradient(bx, by, bx, by + BRICKHEIGHT);
             g.addColorStop(0, "#274b74");
             g.addColorStop(1, "#173150");
 
@@ -245,17 +249,17 @@ function drawBricks() {
 function hitBrick() {
     for (var i = 0; i < NROWS; i++) {
         for (var j = 0; j < NCOLS; j++) {
-            if (bricks[i][j] <= 0) continue;
+            if (!bricks[i][j]) continue;
 
-            var bx = (j * (BRICKWIDTH + PADDING)) + BRICKOFFSETLEFT;
-            var by = (i * (BRICKHEIGHT + PADDING)) + BRICKOFFSETTOP;
+            var bx = j * (BRICKWIDTH + PADDING) + BRICKOFFSETLEFT,
+                by = i * (BRICKHEIGHT + PADDING) + BRICKOFFSETTOP;
 
             if (x + r > bx && x - r < bx + BRICKWIDTH && y + r > by && y - r < by + BRICKHEIGHT) {
                 dy = -dy;
                 bricks[i][j] = 0;
                 score++;
-                updateUI();
-                nextLevelCheck();
+                ui();
+                nextLevel();
                 return;
             }
         }
@@ -276,17 +280,11 @@ function draw() {
 
     if (x + dx > WIDTH - r || x + dx < r) dx = -dx;
 
-    if (y + dy < r) {
-        dy = -dy;
-    } else {
-        var paddleTop = HEIGHT - paddleh - 10;
+    if (y + dy < r) dy = -dy;
+    else {
+        var top = HEIGHT - paddleh - 10;
 
-        if (
-            y + r + dy >= paddleTop &&
-            y - r < paddleTop + paddleh &&
-            x >= paddlex &&
-            x <= paddlex + paddlew
-        ) {
+        if (y + r + dy >= top && y - r < top + paddleh && x >= paddlex && x <= paddlex + paddlew) {
             dy = -Math.abs(dy);
             dx = 8 * ((x - (paddlex + paddlew / 2)) / paddlew);
         } else if (y + dy > HEIGHT - r) {
@@ -299,26 +297,6 @@ function draw() {
     y += dy;
 }
 
-function pauseGame() {
-    if (!gameStarted || gameWon || isPaused) return;
-    isPaused = true;
-    stopLoops();
-    updateUI();
-}
-
-function resumeGame() {
-    if (!gameStarted || gameWon || !isPaused) return;
-    isPaused = false;
-    updateUI();
-    startLoops();
-}
-
-function actionButtonClick() {
-    if (!gameStarted) startNewGame();
-    else if (isPaused) resumeGame();
-    else pauseGame();
-}
-
 function init() {
     stopLoops();
     resetBall();
@@ -326,60 +304,56 @@ function init() {
     initBricks();
     seconds = 0;
     score = 0;
-    gameWon = false;
-    isPaused = false;
-    gameStarted = true;
-    updateUI();
+    won = false;
+    paused = false;
+    started = true;
+    ui();
     draw();
     startLoops();
 }
 
-function startNewGame() {
-    level = 1;
-    init();
-}
-
 function resetBoard() {
     stopLoops();
-    seconds = 0;
-    score = 0;
     level = 1;
-    gameWon = false;
-    isPaused = false;
-    gameStarted = false;
+    score = 0;
+    seconds = 0;
+    won = false;
+    paused = false;
+    started = false;
     resetBall();
     initPaddle();
     initBricks();
-    updateUI();
+    ui();
     draw();
 }
 
-document.addEventListener("keydown", function (e) {
-    if (e.key === "ArrowRight") {
-        rightDown = true;
-        e.preventDefault();
+function clickAction() {
+    if (!started) init();
+    else if (paused) {
+        paused = false;
+        ui();
+        startLoops();
+    } else {
+        paused = true;
+        stopLoops();
+        ui();
     }
-    if (e.key === "ArrowLeft") {
-        leftDown = true;
-        e.preventDefault();
-    }
+}
+
+$(document).on("keydown", function (e) {
+    if (e.key === "ArrowRight") { rightDown = true; e.preventDefault(); }
+    if (e.key === "ArrowLeft") { leftDown = true; e.preventDefault(); }
 });
 
-document.addEventListener("keyup", function (e) {
-    if (e.key === "ArrowRight") {
-        rightDown = false;
-        e.preventDefault();
-    }
-    if (e.key === "ArrowLeft") {
-        leftDown = false;
-        e.preventDefault();
-    }
+$(document).on("keyup", function (e) {
+    if (e.key === "ArrowRight") { rightDown = false; e.preventDefault(); }
+    if (e.key === "ArrowLeft") { leftDown = false; e.preventDefault(); }
 });
 
-actionBtn.addEventListener("click", function () {
-    actionButtonClick();
-    this.blur();
+$btn.on("click", function () {
+    clickAction();
+    $(this).blur();
 });
 
 drawArena();
-updateUI();
+ui();
