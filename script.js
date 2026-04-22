@@ -7,26 +7,26 @@ var $canvas = $("#canvas"),
     $time = $("#cas"),
     $level = $("#level");
 
-var x = 150,
-    y = 200,
-    dx = 2.8,
-    dy = -2.8,
+var x = 0,
+    y = 0,
+    dx = -2.8,
+    dy = 2.8,
     r = 12,
     WIDTH = canvas.width,
     HEIGHT = canvas.height,
-    paddlex = 0,
-    paddleh = 28,
-    paddlew = 140,
-    rightDown = false,
-    leftDown = false,
+    paddley = 0,
+    paddleh = 140,
+    paddlew = 28,
+    upDown = false,
+    downDown = false,
     bricks = [],
-    NROWS = 3,
-    NCOLS = 4,
-    BRICKWIDTH = 0,
-    BRICKHEIGHT = 24,
-    PADDING = 10,
-    BRICKOFFSETLEFT = 18,
-    BRICKOFFSETTOP = 42,
+    NROWS = 6,
+    NCOLS = 3,
+    BRICKWIDTH = 44,
+    BRICKHEIGHT = 0,
+    PADDING = 6,
+    BRICKOFFSETLEFT = 42,
+    BRICKOFFSETTOP = 10,
     intervalId = null,
     timerId = null,
     level = 1,
@@ -99,27 +99,28 @@ function startLoops() {
 }
 
 function resetBall() {
-    x = WIDTH / 2;
-    y = HEIGHT - 75;
-    dx = 2.8;
-    dy = -2.8;
+    x = WIDTH - 100;
+    y = HEIGHT / 2;
+    dx = -2.8;
+    dy = 2.8;
 }
 
 function initPaddle() {
-    paddlex = WIDTH / 2.5;
-    paddlew = 140;
+    paddley = HEIGHT / 2 - paddleh / 2;
+    paddleh = 140;
+    paddlew = 28;
 }
 
 function initBricks() {
     if (level == 1) {
-        NROWS = 3; NCOLS = 4;
+        NROWS = 6; NCOLS = 3;
     } else if (level == 2) {
-        NROWS = 4; NCOLS = 6;
+        NROWS = 8; NCOLS = 4;
     } else {
-        NROWS = 5; NCOLS = 8;
+        NROWS = 10; NCOLS = 5;
     }
 
-    BRICKWIDTH = Math.floor((WIDTH - BRICKOFFSETLEFT * 2 - (NCOLS - 1) * PADDING) / NCOLS);
+    BRICKHEIGHT = Math.floor((HEIGHT - BRICKOFFSETTOP * 2 - (NROWS - 1) * PADDING) / NROWS);
     bricks = [];
 
     for (var i = 0; i < NROWS; i++) {
@@ -128,23 +129,16 @@ function initBricks() {
     }
 }
 
-function allBricksGone() {
-    for (var i = 0; i < NROWS; i++) {
-        for (var j = 0; j < NCOLS; j++) {
-            if (bricks[i][j] > 0) return false;
-        }
-    }
-    return true;
-}
-
-function nextLevel() {
-    if (!allBricksGone() || won) return;
+function scoreGoal() {
+    if (won) return;
 
     won = true;
+    score++;
+    ui();
     stopLoops();
 
     if (level < 3) {
-        alertBox("Nice!", "You completed level " + level + ".", "Continue").then(function () {
+        alertBox("GOAL!", "You scored! Level " + level + " complete.", "Continue").then(function () {
             level++;
             won = false;
             paused = false;
@@ -156,14 +150,14 @@ function nextLevel() {
             startLoops();
         });
     } else {
-        alertBox("Champion!", "You completed all levels.", "Play Again").then(function () {
+        alertBox("Champion!", "Hat-trick! You completed all levels.", "Play Again").then(function () {
             resetBoard();
         });
     }
 }
 
 function drawArena() {
-    var ice = ctx.createLinearGradient(0, 0, 0, HEIGHT);
+    var ice = ctx.createLinearGradient(0, 0, WIDTH, 0);
     ice.addColorStop(0, "#eefbff");
     ice.addColorStop(0.5, "#dff4ff");
     ice.addColorStop(1, "#cdeaff");
@@ -192,10 +186,15 @@ function drawArena() {
     ctx.fillStyle = "rgba(220,40,40,0.9)";
     ctx.fill();
 
-    ctx.beginPath();
-    ctx.arc(150, 115, 40, 0, Math.PI * 2);
     ctx.lineWidth = 3;
     ctx.strokeStyle = "rgba(220,40,40,0.4)";
+
+    ctx.beginPath();
+    ctx.arc(150, 115, 40, 0, Math.PI * 2);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.arc(150, HEIGHT - 115, 40, 0, Math.PI * 2);
     ctx.stroke();
 
     ctx.beginPath();
@@ -203,14 +202,34 @@ function drawArena() {
     ctx.stroke();
 
     ctx.beginPath();
-    ctx.arc(WIDTH / 2, HEIGHT - 20, 70, Math.PI, 2 * Math.PI);
-    ctx.lineWidth = 4;
-    ctx.strokeStyle = "rgba(40,110,220,0.45)";
+    ctx.arc(WIDTH - 150, HEIGHT - 115, 40, 0, Math.PI * 2);
     ctx.stroke();
+
+    ctx.beginPath();
+    ctx.arc(0, HEIGHT / 2, 70, -Math.PI / 2, Math.PI / 2);
+    ctx.lineWidth = 4;
+    ctx.strokeStyle = "rgba(40,110,220,0.55)";
+    ctx.stroke();
+    ctx.fillStyle = "rgba(40,110,220,0.10)";
+    ctx.fill();
+
+    var goalH = 120, goalD = 22;
+    var goalY = (HEIGHT - goalH) / 2;
+    ctx.strokeStyle = "rgba(220,40,40,0.95)";
+    ctx.lineWidth = 4;
+    ctx.strokeRect(0, goalY, goalD, goalH);
+    ctx.fillStyle = "rgba(220,40,40,0.18)";
+    ctx.fillRect(0, goalY, goalD, goalH);
 }
 
 function drawPaddle() {
-    ctx.drawImage(paddleImg, paddlex, HEIGHT - paddleh - 10, paddlew, paddleh);
+    ctx.save();
+    var px = WIDTH - paddlew - 10;
+    var py = paddley;
+    ctx.translate(px + paddlew / 2, py + paddleh / 2);
+    ctx.rotate(Math.PI / 2);
+    ctx.drawImage(paddleImg, -paddleh / 2, -paddlew / 2, paddleh, paddlew);
+    ctx.restore();
 }
 
 function drawPuck() {
@@ -224,7 +243,7 @@ function drawBricks() {
 
             var bx = j * (BRICKWIDTH + PADDING) + BRICKOFFSETLEFT,
                 by = i * (BRICKHEIGHT + PADDING) + BRICKOFFSETTOP,
-                g = ctx.createLinearGradient(bx, by, bx, by + BRICKHEIGHT);
+                g = ctx.createLinearGradient(bx, by, bx + BRICKWIDTH, by);
 
             g.addColorStop(0, "#274b74");
             g.addColorStop(1, "#173150");
@@ -241,7 +260,7 @@ function drawBricks() {
             ctx.strokeRect(bx, by, BRICKWIDTH, BRICKHEIGHT);
 
             ctx.fillStyle = "rgba(255,255,255,0.30)";
-            ctx.fillRect(bx + 8, by + BRICKHEIGHT / 2 - 1, BRICKWIDTH - 16, 2);
+            ctx.fillRect(bx + 4, by + BRICKHEIGHT / 2 - 1, BRICKWIDTH - 8, 2);
         }
     }
 }
@@ -255,11 +274,9 @@ function hitBrick() {
                 by = i * (BRICKHEIGHT + PADDING) + BRICKOFFSETTOP;
 
             if (x + r > bx && x - r < bx + BRICKWIDTH && y + r > by && y - r < by + BRICKHEIGHT) {
-                dy = -dy;
+                dx = -dx;
                 bricks[i][j] = 0;
-                score++;
                 ui();
-                nextLevel();
                 return;
             }
         }
@@ -270,27 +287,35 @@ function draw() {
     ctx.clearRect(0, 0, WIDTH, HEIGHT);
     drawArena();
 
-    if (rightDown) paddlex = Math.min(WIDTH - paddlew, paddlex + 7);
-    if (leftDown) paddlex = Math.max(0, paddlex - 7);
+    if (upDown) paddley = Math.max(0, paddley - 7);
+    if (downDown) paddley = Math.min(HEIGHT - paddleh, paddley + 7);
 
     drawBricks();
     drawPaddle();
     drawPuck();
     hitBrick();
+	
+    if (y + dy < r || y + dy > HEIGHT - r) dy = -dy;
 
-    if (x + dx > WIDTH - r || x + dx < r) dx = -dx;
-
-    if (y + dy < r) dy = -dy;
-    else {
-        var top = HEIGHT - paddleh - 10;
-
-        if (y + r + dy >= top && y - r < top + paddleh && x >= paddlex && x <= paddlex + paddlew) {
-            dy = -Math.abs(dy);
-            dx = 8 * ((x - (paddlex + paddlew / 2)) / paddlew);
-        } else if (y + dy > HEIGHT - r) {
-            resetBoard();
+    if (x + dx < r) {
+        var goalH = 120;
+        var goalY = (HEIGHT - goalH) / 2;
+        if (y >= goalY && y <= goalY + goalH) {
+            scoreGoal();
             return;
+        } else {
+            dx = -dx;
         }
+    }
+
+    var px = WIDTH - paddlew - 10;
+    if (x + r + dx >= px && x - r < px + paddlew && y + r >= paddley && y - r <= paddley + paddleh) {
+        dx = -Math.abs(dx);
+        dy = 8 * ((y - (paddley + paddleh / 2)) / paddleh);
+    } else if (x + dx > WIDTH - r) {
+        // Ball went past the paddle — reset
+        resetBoard();
+        return;
     }
 
     x += dx;
@@ -341,13 +366,13 @@ function clickAction() {
 }
 
 $(document).on("keydown", function (e) {
-    if (e.key === "ArrowRight") { rightDown = true; e.preventDefault(); }
-    if (e.key === "ArrowLeft") { leftDown = true; e.preventDefault(); }
+    if (e.key === "ArrowUp") { upDown = true; e.preventDefault(); }
+    if (e.key === "ArrowDown") { downDown = true; e.preventDefault(); }
 });
 
 $(document).on("keyup", function (e) {
-    if (e.key === "ArrowRight") { rightDown = false; e.preventDefault(); }
-    if (e.key === "ArrowLeft") { leftDown = false; e.preventDefault(); }
+    if (e.key === "ArrowUp") { upDown = false; e.preventDefault(); }
+    if (e.key === "ArrowDown") { downDown = false; e.preventDefault(); }
 });
 
 $btn.on("click", function () {

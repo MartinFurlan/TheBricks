@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 55 80" width="55" height="80">
+  <!-- Helmet -->
+  <ellipse cx="27.5" cy="11" rx="11" ry="10" fill="#1a3a5c" stroke="#ffffff" stroke-width="1.2"/>
+  <!-- Visor -->
+  <path d="M18 13 Q27.5 20 37 13" fill="none" stroke="#88ccff" stroke-width="1.5"/>
+  <!-- Face -->
+  <ellipse cx="27.5" cy="14" rx="7" ry="6" fill="#f5c5a3"/>
+  <!-- Jersey body -->
+  <rect x="15" y="22" width="25" height="22" rx="4" fill="#1a3a5c" stroke="#ffffff" stroke-width="1"/>
+  <!-- Jersey number -->
+  <text x="27.5" y="37" font-family="Arial" font-size="9" font-weight="bold" fill="#ffffff" text-anchor="middle">9</text>
+  <!-- Left arm -->
+  <path d="M15 24 L5 34 L8 37 L17 29" fill="#1a3a5c" stroke="#ffffff" stroke-width="0.8"/>
+  <!-- Right arm + stick -->
+  <path d="M40 24 L50 30 L48 34 L38 28" fill="#1a3a5c" stroke="#ffffff" stroke-width="0.8"/>
+  <!-- Hockey stick (right side) -->
+  <line x1="49" y1="31" x2="54" y2="50" stroke="#8B4513" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="54" y1="49" x2="46" y2="54" stroke="#8B4513" stroke-width="3" stroke-linecap="round"/>
+  <!-- Pants -->
+  <rect x="16" y="43" width="23" height="12" rx="3" fill="#0d2540"/>
+  <!-- Left skate boot -->
+  <rect x="15" y="55" width="10" height="12" rx="2" fill="#1a3a5c"/>
+  <line x1="13" y1="67" x2="27" y2="67" stroke="#cccccc" stroke-width="1.5" stroke-linecap="round"/>
+  <!-- Right skate boot -->
+  <rect x="30" y="55" width="10" height="12" rx="2" fill="#1a3a5c"/>
+  <line x1="28" y1="67" x2="42" y2="67" stroke="#cccccc" stroke-width="1.5" stroke-linecap="round"/>
+</svg>
